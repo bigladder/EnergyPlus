@@ -1888,6 +1888,9 @@ namespace AirflowNetworkBalanceManager {
         CurrentModuleObject = "AirflowNetwork:SimulationControl";
         NumAirflowNetwork = inputProcessor->getNumObjectsFound(CurrentModuleObject);
         if (NumAirflowNetwork == 0) {
+            if ( inputProcessor->getNumObjectsFound("AirflowNetwork:Multizone:Zone") > 0 ) {
+                ShowWarningError("The AirflowNetwork model has no AirflowNetwork:SimulationControl object. Model will run with NoMultizoneOrDistribution AirflowNetwork control.");
+            }
             SimulateAirflowNetwork = AirflowNetworkControlSimple;
             print(outputFiles.eio, Format_110);
             print(outputFiles.eio, Format_120, "NoMultizoneOrDistribution");
