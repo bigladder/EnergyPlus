@@ -3702,7 +3702,7 @@ namespace SystemAvailabilityManager {
 		// check if night venting allowed: not allowed if avail sched is off or fan sched is on
 		// CR 7913 changed to allow during warmup
 		if ( ( GetCurrentScheduleValue( NVentSysAvailMgrData( SysAvailNum ).SchedPtr ) <= 0.0 ) || ( GetCurrentScheduleValue( NVentSysAvailMgrData( SysAvailNum ).FanSchedPtr ) > 0.0 ) ) {
-			AvailStatus = NoActi.0on;
+			AvailStatus = NoAction;
 		} else {
 
 			VentTemp = GetCurrentScheduleValue( NVentSysAvailMgrData( SysAvailNum ).VentTempSchedPtr );
