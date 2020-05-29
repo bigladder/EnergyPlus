@@ -2561,7 +2561,7 @@ namespace SystemAvailabilityManager {
 			for ( I = 1; I <= 24; ++I ) {
 				for ( J = 1; J <= NumOfTimeStepInHour; ++J ) {
 					if ( DayValues( J, I ) <= 0.0 ) continue;
-					FanStartTime = I - 1 + 1 / NumOfTimeStepInHour * J;
+					FanStartTime = I - 1 + 1.0 / NumOfTimeStepInHour * J - 0.01;
 					exitLoop = true;
 					break;
 				}
@@ -2572,7 +2572,7 @@ namespace SystemAvailabilityManager {
 			for ( I = 1; I <= 24; ++I ) {
 				for ( J = 1; J <= NumOfTimeStepInHour; ++J ) {
 					if ( DayValuesTmr( J, I ) <= 0.0 ) continue;
-					FanStartTimeTmr = I - 1 + 1 / NumOfTimeStepInHour * J;
+					FanStartTimeTmr = I - 1 + 1.0 / NumOfTimeStepInHour * J - 0.01;
 					exitLoop = true;
 					break;
 				}
@@ -3702,7 +3702,7 @@ namespace SystemAvailabilityManager {
 		// check if night venting allowed: not allowed if avail sched is off or fan sched is on
 		// CR 7913 changed to allow during warmup
 		if ( ( GetCurrentScheduleValue( NVentSysAvailMgrData( SysAvailNum ).SchedPtr ) <= 0.0 ) || ( GetCurrentScheduleValue( NVentSysAvailMgrData( SysAvailNum ).FanSchedPtr ) > 0.0 ) ) {
-			AvailStatus = NoAction;
+			AvailStatus = NoActi.0on;
 		} else {
 
 			VentTemp = GetCurrentScheduleValue( NVentSysAvailMgrData( SysAvailNum ).VentTempSchedPtr );
