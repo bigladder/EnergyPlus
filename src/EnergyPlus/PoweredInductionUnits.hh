@@ -101,6 +101,7 @@ namespace PoweredInductionUnits {
 		Real64 MaxPriAirMassFlow; // kg/s
 		Real64 MinPriAirFlowFrac; // minimum primary air flow fraction
 		Real64 MinPriAirMassFlow; // kg/s
+                Real64 PriDamperPosition; // primary air damper position
 		Real64 MaxSecAirVolFlow; // m3/s (parallel)
 		Real64 MaxSecAirMassFlow; // kg/s (parallel)
 		Real64 FanOnFlowFrac; // frac of primary air flow at which fan turns on (parallel)
@@ -155,6 +156,7 @@ namespace PoweredInductionUnits {
 			MaxPriAirMassFlow( 0.0 ),
 			MinPriAirFlowFrac( 0.0 ),
 			MinPriAirMassFlow( 0.0 ),
+                        PriDamperPosition( 0.0 ),
 			MaxSecAirVolFlow( 0.0 ),
 			MaxSecAirMassFlow( 0.0 ),
 			FanOnFlowFrac( 0.0 ),
