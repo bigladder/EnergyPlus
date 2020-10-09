@@ -65,6 +65,8 @@ namespace EconomicTariff {
     // Data
     // ECONOMCIS:TARIFF enumerated lists
 
+    extern bool GetInputFlagTariff;
+
     extern int const kindUnknown;
     extern int const kindTariff;
     extern int const kindQualify;
@@ -568,6 +570,8 @@ namespace EconomicTariff {
 
     //======================================================================================================================
     //======================================================================================================================
+
+    void SetupTariffMeterReporting();
 
     void GetInputEconomicsTariff(bool &ErrorsFound); // true if errors found during getting input objects.
 

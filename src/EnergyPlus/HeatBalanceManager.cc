@@ -5889,6 +5889,7 @@ namespace HeatBalanceManager {
         // Using/Aliasing
         using DataSystemVariables::ReportDuringWarmup; // added for FMI
         using DataSystemVariables::UpdateDataDuringWarmupExternalInterface;
+        using EconomicTariff::ComputeTariff; // added for computing annual utility costs
         using EconomicTariff::UpdateUtilityBills; // added for computing annual utility costs
         using NodeInputManager::CalcMoreNodeInfo;
         using OutputReportTabular::UpdateTabularReports;
@@ -5929,6 +5930,7 @@ namespace HeatBalanceManager {
 
             UpdateTabularReports(ZoneTSReporting);
             UpdateUtilityBills();
+            ComputeTariff();
         } else if (!KickOffSimulation && DoOutputReporting && ReportDuringWarmup) {
             if (BeginDayFlag && !PrintEnvrnStampWarmupPrinted) {
                 PrintEnvrnStampWarmup = true;

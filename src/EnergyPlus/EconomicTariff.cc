@@ -289,6 +289,7 @@ namespace EconomicTariff {
     int topOfStack(0);
     int sizeStack(0);
 
+    bool GetInputFlagTariff(true);
     // MODULE VARIABLE DECLARATIONS:
 
     // SUBROUTINE SPECIFICATIONS FOR MODULE
@@ -360,6 +361,56 @@ namespace EconomicTariff {
         }
     }
 
+    void SetupTariffMeterReporting()
+    {
+
+        // SUBROUTINE INFORMATION:
+        //       AUTHOR         Richard Liesen
+        //       DATE WRITTEN   August 2002
+        //       MODIFIED       na
+        //       RE-ENGINEERED  December 2003 RJL
+
+        // PURPOSE OF THIS SUBROUTINE:
+        // This subroutine is the input routines and Get routines
+
+        // METHODOLOGY EMPLOYED:
+        // Uses the status flags to trigger events.
+
+        // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
+        using namespace DataIPShortCuts;
+        int NumAlphas; // Number of elements in the alpha array
+        int NumNums;   // Number of elements in the numeric array
+        int IOStat; // IO Status when calling get input subroutine
+        int iInObj;    // loop index variable for reading in objects
+        std::string CurrentModuleObject; // for ease in renaming.
+        bool ErrorsFound(false);
+
+        if (GetInputFlagTariff) {
+            GetInputEconomicsTariff(ErrorsFound);
+            GetInputFlagTariff = false;
+        }
+
+        CurrentModuleObject = "UtilityCost:Tariff";
+        numTariff = inputProcessor->getNumObjectsFound(CurrentModuleObject);
+        tariff.allocate(numTariff);
+        for (iInObj = 1; iInObj <= numTariff; ++iInObj) {
+            inputProcessor->getObjectItem(CurrentModuleObject,
+                                          iInObj,
+                                          cAlphaArgs,
+                                          NumAlphas,
+                                          rNumericArgs,
+                                          NumNums,
+                                          IOStat,
+                                          lNumericFieldBlanks,
+                                          lAlphaFieldBlanks,
+                                          cAlphaFieldNames,
+                                          cNumericFieldNames);
+            // name of the tariff
+            tariff(iInObj).tariffName = cAlphaArgs(1);
+            SetupOutputVariable("Annual Utility Cost", OutputProcessor::Unit::None, tariff(iInObj).totalAnnualCost, "System", "Average", tariff(iInObj).tariffName);
+            SetupOutputVariable("Annual Energy Use", OutputProcessor::Unit::None, tariff(iInObj).totalAnnualEnergy, "System", "Average", tariff(iInObj).tariffName);
+        }
+    }
     //======================================================================================================================
     //======================================================================================================================
 

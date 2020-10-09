@@ -256,6 +256,7 @@ namespace SimulationManager {
         using EconomicLifeCycleCost::ComputeLifeCycleCostAndReport;
         using EconomicLifeCycleCost::GetInputForLifeCycleCost;
         using EconomicTariff::ComputeTariff; // added for computing annual utility costs
+        using EconomicTariff::SetupTariffMeterReporting;
         using EconomicTariff::WriteTabularTariffReports;
         using EMSManager::CheckIfAnyEMS;
         using EMSManager::ManageEMS;
@@ -407,6 +408,7 @@ namespace SimulationManager {
 
             SetupNodeVarsForReporting();
             MetersHaveBeenInitialized = true;
+            SetupTariffMeterReporting();
             SetupPollutionMeterReporting();
             UpdateMeterReporting();
             CheckPollutionMeterReporting();
@@ -646,7 +648,7 @@ namespace SimulationManager {
 #endif
         SimCostEstimate();
 
-        ComputeTariff(); //     Compute the utility bills
+//        ComputeTariff(); //     Compute the utility bills
 
         EMSManager::checkForUnusedActuatorsAtEnd();
 
