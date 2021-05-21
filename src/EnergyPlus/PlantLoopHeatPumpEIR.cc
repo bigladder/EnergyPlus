@@ -277,7 +277,7 @@ namespace EIRPlantLoopHeatPumps {
                                                  this->loadSideLocation.compNum);
 
             // if there's no flow in one, try to turn the entire heat pump off
-            if (this->loadSideMassFlowRate <= 0.0 || this->sourceSideMassFlowRate <= 0.0) {
+            if (this->loadSideMassFlowRate <= 0.0) {
                 this->loadSideMassFlowRate = 0.0;
                 this->sourceSideMassFlowRate = 0.0;
                 this->running = false;
