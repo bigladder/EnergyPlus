@@ -651,6 +651,7 @@ namespace EIRPlantLoopHeatPumps {
                 // now handle the auto-sizable load side flow rate
                 if (this->loadSideDesignVolFlowRateWasAutoSized) {
                     this->loadSideDesignVolFlowRate = tmpLoadVolFlow;
+                    this->loadSideDesignMassFlowRate = rho * this->loadSideDesignVolFlowRate;
                     if (DataPlant::PlantFinalSizesOkayToReport) {
                         BaseSizer::reportSizerOutput(typeName, this->name, "Design Size Load Side Volume Flow Rate [m3/s]", tmpLoadVolFlow);
                     }
