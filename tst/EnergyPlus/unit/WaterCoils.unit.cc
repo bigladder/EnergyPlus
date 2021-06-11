@@ -65,7 +65,6 @@
 #include <EnergyPlus/DataAirLoop.hh>
 #include <EnergyPlus/DataEnvironment.hh>
 #include <EnergyPlus/DataHVACGlobals.hh>
-#include <EnergyPlus/Plant/DataPlant.hh>
 #include <EnergyPlus/DataHeatBalFanSys.hh>
 #include <EnergyPlus/DataHeatBalance.hh>
 #include <EnergyPlus/DataLoopNode.hh>
@@ -79,7 +78,6 @@
 #include <EnergyPlus/GlobalNames.hh>
 #include <EnergyPlus/HeatBalanceManager.hh>
 #include <EnergyPlus/MixedAir.hh>
-#include <EnergyPlus/OutputFiles.hh>
 #include <EnergyPlus/OutputReportPredefined.hh>
 #include <EnergyPlus/Plant/DataPlant.hh>
 #include <EnergyPlus/Psychrometrics.hh>
@@ -1786,88 +1784,87 @@ TEST_F(WaterCoilsTest, FanCoilCoolingWaterFlowTest)
 
 TEST_F(WaterCoilsTest, WaterCoolingCoilNodeTemps)
 {
-    OutBaroPress = 101325.0;
-    StdRhoAir = PsyRhoAirFnPbTdbW(OutBaroPress, 20.0, 0.0);
+    state->dataEnvrn->OutBaroPress = 101325.0;
+    state->dataEnvrn->StdRhoAir = PsyRhoAirFnPbTdbW(*state, state->dataEnvrn->OutBaroPress, 20.0, 0.0);
 
     // set up sizing flags
-    SysSizingRunDone = true;
+    state->dataSize->SysSizingRunDone = true;
 
     // set up plant sizing
-    NumPltSizInput = 1;
-    PlantSizData(1).PlantLoopName = "WaterLoop";
+    state->dataSize->NumPltSizInput = 1;
+    state->dataSize->PlantSizData(1).PlantLoopName = "WaterLoop";
 
     // set up plant loop
-    for (int l = 1; l <= TotNumLoops; ++l) {
-        auto &loop(PlantLoop(l));
+    for (int l = 1; l <= state->dataPlnt->TotNumLoops; ++l) {
+        auto &loop(state->dataPlnt->PlantLoop(l));
         loop.LoopSide.allocate(2);
-        auto &loopside(PlantLoop(1).LoopSide(1));
+        auto &loopside(state->dataPlnt->PlantLoop(1).LoopSide(1));
         loopside.TotalBranches = 1;
         loopside.Branch.allocate(1);
-        auto &loopsidebranch(PlantLoop(1).LoopSide(1).Branch(1));
+        auto &loopsidebranch(state->dataPlnt->PlantLoop(1).LoopSide(1).Branch(1));
         loopsidebranch.TotalComponents = 1;
         loopsidebranch.Comp.allocate(1);
     }
-    PlantLoop(1).Name = "WaterLoop";
-    PlantLoop(1).FluidName = "FluidWaterLoop";
-    PlantLoop(1).FluidIndex = 1;
-    PlantLoop(1).FluidName = "WATER";
-    PlantLoop(1).FluidIndex = 1;
-    PlantLoop(1).OutletNodeTemperature = 6.67;
+    state->dataPlnt->PlantLoop(1).Name = "WaterLoop";
+    state->dataPlnt->PlantLoop(1).FluidName = "FluidWaterLoop";
+    state->dataPlnt->PlantLoop(1).FluidIndex = 1;
+    state->dataPlnt->PlantLoop(1).FluidName = "WATER";
+    state->dataPlnt->PlantLoop(1).FluidIndex = 1;
+    state->dataPlnt->PlantLoop(1).OutletNodeTemperature = 6.67;
 
     // set up sizing data
-    FinalSysSizing(1).MixTempAtCoolPeak = 20.0;
-    FinalSysSizing(1).CoolSupTemp = 10.0;
-    FinalSysSizing(1).MixHumRatAtCoolPeak = 0.01;
-    FinalSysSizing(1).DesMainVolFlow = 0.00159;
-    FinalSysSizing(1).HeatSupTemp = 25.0;
-    FinalSysSizing(1).HeatOutTemp = 5.0;
-    FinalSysSizing(1).HeatRetTemp = 20.0;
+    state->dataSize->FinalSysSizing(1).MixTempAtCoolPeak = 20.0;
+    state->dataSize->FinalSysSizing(1).CoolSupTemp = 10.0;
+    state->dataSize->FinalSysSizing(1).MixHumRatAtCoolPeak = 0.01;
+    state->dataSize->FinalSysSizing(1).DesMainVolFlow = 0.00159;
+    state->dataSize->FinalSysSizing(1).HeatSupTemp = 25.0;
+    state->dataSize->FinalSysSizing(1).HeatOutTemp = 5.0;
+    state->dataSize->FinalSysSizing(1).HeatRetTemp = 20.0;
 
     // set up water coil
     int CoilNum = 1;
-    WaterCoil(CoilNum).Name = "Test Water Cooling Coil";
-    WaterCoil(CoilNum).WaterLoopNum = 1;
-    WaterCoil(CoilNum).WaterCoilType = CoilType_Cooling;
-    WaterCoil(CoilNum).RequestingAutoSize = true;
-    WaterCoil(CoilNum).DesAirVolFlowRate = AutoSize;
-    WaterCoil(CoilNum).DesInletAirTemp = AutoSize;
-    WaterCoil(CoilNum).DesOutletAirTemp = AutoSize;
-    WaterCoil(CoilNum).DesInletWaterTemp = AutoSize;
-    WaterCoil(CoilNum).DesInletAirHumRat = AutoSize;
-    WaterCoil(CoilNum).DesOutletAirHumRat = AutoSize;
-    WaterCoil(CoilNum).MaxWaterVolFlowRate = AutoSize;
+    state->dataWaterCoils->WaterCoil(CoilNum).Name = "Test Water Cooling Coil";
+    state->dataWaterCoils->WaterCoil(CoilNum).WaterLoopNum = 1;
+    state->dataWaterCoils->WaterCoil(CoilNum).WaterCoilType = DataPlant::TypeOf_CoilWaterCooling;
+    state->dataWaterCoils->WaterCoil(CoilNum).RequestingAutoSize = true;
+    state->dataWaterCoils->WaterCoil(CoilNum).DesAirVolFlowRate = AutoSize;
+    state->dataWaterCoils->WaterCoil(CoilNum).DesInletAirTemp = AutoSize;
+    state->dataWaterCoils->WaterCoil(CoilNum).DesOutletAirTemp = AutoSize;
+    state->dataWaterCoils->WaterCoil(CoilNum).DesInletWaterTemp = AutoSize;
+    state->dataWaterCoils->WaterCoil(CoilNum).DesInletAirHumRat = AutoSize;
+    state->dataWaterCoils->WaterCoil(CoilNum).DesOutletAirHumRat = AutoSize;
+    state->dataWaterCoils->WaterCoil(CoilNum).MaxWaterVolFlowRate = AutoSize;
 
-    WaterCoilNumericFields(CoilNum).FieldNames(3) = "Maximum Flow Rate";
-    WaterCoil(CoilNum).WaterInletNodeNum = 1;
-    PlantLoop(1).LoopSide(1).Branch(1).Comp(1).NodeNumIn = WaterCoil(CoilNum).WaterInletNodeNum;
+    state->dataWaterCoils->WaterCoilNumericFields(CoilNum).FieldNames(3) = "Maximum Flow Rate";
+    state->dataWaterCoils->WaterCoil(CoilNum).WaterInletNodeNum = 1;
+    state->dataPlnt->PlantLoop(1).LoopSide(1).Branch(1).Comp(1).NodeNumIn = state->dataWaterCoils->WaterCoil(CoilNum).WaterInletNodeNum;
 
-    CurZoneEqNum = 0;
-    CurSysNum = 1;
-    CurOASysNum = 0;
-    SysSizInput(1).CoolCapControl = VAV;
-    PlantSizData(1).ExitTemp = 5.7;
-    PlantSizData(1).DeltaT = 5.0;
-    FinalSysSizing(1).MassFlowAtCoolPeak = FinalSysSizing(1).DesMainVolFlow * StdRhoAir;
-    DataWaterLoopNum = 1;
-    NumOfGlycols = 1;
+    state->dataSize->CurZoneEqNum = 0;
+    state->dataSize->CurSysNum = 1;
+    state->dataSize->CurOASysNum = 0;
+    state->dataSize->SysSizInput(1).CoolCapControl = VAV;
+    state->dataSize->PlantSizData(1).ExitTemp = 5.7;
+    state->dataSize->PlantSizData(1).DeltaT = 5.0;
+    state->dataSize->FinalSysSizing(1).MassFlowAtCoolPeak = state->dataSize->FinalSysSizing(1).DesMainVolFlow * state->dataEnvrn->StdRhoAir;
+    state->dataSize->DataWaterLoopNum = 1;
+    state->dataFluidProps->NumOfGlycols = 1;
 
-    createCoilSelectionReportObj();
-    SizeWaterCoil(CoilNum);
-    DataLoopNode::Node.allocate(4);
-    WaterCoil(CoilNum).AirInletNodeNum = 2;
-    WaterCoil(CoilNum).AirOutletNodeNum = 3;
-    WaterCoil(CoilNum).WaterOutletNodeNum = 4;
-    WaterCoil(CoilNum).InletAirMassFlowRate = 1;
-    WaterCoil(CoilNum).InletAirTemp = 20;
-    WaterCoil(CoilNum).InletWaterMassFlowRate = 0.2;
-    WaterCoil(CoilNum).InletWaterTemp = 11.8;
+    createCoilSelectionReportObj(*state);
+    SizeWaterCoil(*state, CoilNum);
+    state->dataLoopNodes->Node.allocate(4);
+    state->dataWaterCoils->WaterCoil(CoilNum).AirInletNodeNum = 2;
+    state->dataWaterCoils->WaterCoil(CoilNum).AirOutletNodeNum = 3;
+    state->dataWaterCoils->WaterCoil(CoilNum).WaterOutletNodeNum = 4;
+    state->dataWaterCoils->WaterCoil(CoilNum).InletAirMassFlowRate = 1;
+    state->dataWaterCoils->WaterCoil(CoilNum).InletAirTemp = 20;
+    state->dataWaterCoils->WaterCoil(CoilNum).InletWaterMassFlowRate = 0.2;
+    state->dataWaterCoils->WaterCoil(CoilNum).InletWaterTemp = 11.8;
     bool InitWaterCoilOneTimeFlag = false;
-//    InitWaterCoil(OutputFiles::getSingleton(), CoilNum, false);
-    CoolingCoil(CoilNum,false,SimCalc,ContFanCycCoil,1);
-    UpdateWaterCoil(CoilNum);
-    Real64 AirOutletMassFlowRate = DataLoopNode::Node(WaterCoil(CoilNum).AirOutletNodeNum).MassFlowRate;
-    Real64 AirOutletTemp = DataLoopNode::Node(WaterCoil(CoilNum).AirOutletNodeNum).Temp;
-    Real64 WaterOutletMassFlowRate = DataLoopNode::Node(WaterCoil(CoilNum).WaterOutletNodeNum).MassFlowRate;
-    Real64 WaterOutletTemp = DataLoopNode::Node(WaterCoil(CoilNum).WaterOutletNodeNum).Temp;
-
+    //    InitWaterCoil(OutputFiles::getSingleton(), CoilNum, false);
+    CoolingCoil(*state, CoilNum, false, state->dataWaterCoils->SimCalc, ContFanCycCoil, 1);
+    UpdateWaterCoil(*state, CoilNum);
+    Real64 AirOutletMassFlowRate = state->dataLoopNodes->Node(state->dataWaterCoils->WaterCoil(CoilNum).AirOutletNodeNum).MassFlowRate;
+    Real64 AirOutletTemp = state->dataLoopNodes->Node(state->dataWaterCoils->WaterCoil(CoilNum).AirOutletNodeNum).Temp;
+    Real64 WaterOutletMassFlowRate = state->dataLoopNodes->Node(state->dataWaterCoils->WaterCoil(CoilNum).WaterOutletNodeNum).MassFlowRate;
+    Real64 WaterOutletTemp = state->dataLoopNodes->Node(state->dataWaterCoils->WaterCoil(CoilNum).WaterOutletNodeNum).Temp;
 }
