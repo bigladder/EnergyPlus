@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -48,11 +48,15 @@
 #ifndef EPLUS_PLUGIN_MANAGER_HH
 #define EPLUS_PLUGIN_MANAGER_HH
 
+// C++ Headers
 #include <iomanip>
 #include <queue>
 #include <utility>
 #include <vector>
+
+// EnergyPlus Headers
 #include <EnergyPlus/DataGlobals.hh>
+#include <EnergyPlus/EMSManager.hh>
 #include <EnergyPlus/EnergyPlus.hh>
 
 #if LINK_WITH_PYTHON
@@ -62,8 +66,8 @@
 // to undefine _DEBUG during the #include command for Python.h.
 // Otherwise it will fail
 #undef _DEBUG
-  #include <Python.h>
-  #define _DEBUG
+#include <Python.h>
+#define _DEBUG
 #else
 #include <Python.h>
 #endif
@@ -71,146 +75,193 @@
 
 namespace EnergyPlus {
 
+// Forward declarations
+struct EnergyPlusData;
+
 namespace PluginManagement {
 
-    void registerNewCallback(int iCalledFrom, std::function<void ()> f);
-    void runAnyRegisteredCallbacks(int iCalledFrom, bool &anyRan);
-    std::string pythonStringForUsage();
+    constexpr const char *programName = "python";
+
+    void registerNewCallback(EnergyPlusData &state, EMSManager::EMSCallFrom iCalledFrom, const std::function<void(void *)> &f);
+    void runAnyRegisteredCallbacks(EnergyPlusData &state, EMSManager::EMSCallFrom iCalledFrom, bool &anyRan);
+    void onBeginEnvironment(EnergyPlusData &state);
+    std::string pythonStringForUsage(EnergyPlusData &state);
 
     void clear_state();
 
-    struct PluginInstance {
-        PluginInstance(const std::string& _moduleName, const std::string& _className, std::string emsName, bool runPluginDuringWarmup) :
-                emsAlias(std::move(emsName)), runDuringWarmup(runPluginDuringWarmup)
+    struct PluginInstance
+    {
+        PluginInstance(const fs::path &_modulePath, const std::string &_className, std::string emsName, bool runPluginDuringWarmup)
+            : modulePath(_modulePath), className(_className), emsAlias(std::move(emsName)), runDuringWarmup(runPluginDuringWarmup),
+              stringIdentifier(_modulePath.string() + "." + _className)
         {
-            this->moduleName = _moduleName;
-            this->className = _className;
-            this->stringIdentifier = _moduleName + "." + _className;
         }
 
         // members
-        std::string moduleName;
+        fs::path modulePath;
         std::string className;
         std::string emsAlias;
         bool runDuringWarmup;
         std::string stringIdentifier; // for diagnostic reporting
-#if LINK_WITH_PYTHON
-        PyObject *pModule = nullptr;  // reference to module
-        PyObject *pClassInstance = nullptr; // reference to instantiated class -- *don't decref until the end of the simulation*
-#endif
 
-        // setup/shutdown should only be called once construction is completely done, i.e., setup() should only be called once the vector holding all the
-        // instances is done for the day, and shutdown should only be called when you are ready to destruct all the instances.  The things that happen
-        // inside setup() and shutdown() are related to un-managed memory, and it's tricky to manage inside existing constructor/move operations, so they
-        // are split out into these explicitly called methods.
-        void setup();
-        void shutdown();
+        // setup/shutdown should only be called once construction is completely done, i.e., setup() should only be called once the vector holding all
+        // the instances is done for the day, and shutdown should only be called when you are ready to destruct all the instances.  The things that
+        // happen inside setup() and shutdown() are related to un-managed memory, and it's tricky to manage inside existing constructor/move
+        // operations, so they are split out into these explicitly called methods.
+        void setup(EnergyPlusData &state);
+        void shutdown() const;
 
         // methods
-        static void reportPythonError();
-        void run(int iCallingPoint); // calls main() on this plugin instance
+        static void reportPythonError(EnergyPlusData &state);
+        bool run(EnergyPlusData &state, EMSManager::EMSCallFrom iCallingPoint) const; // calls main() on this plugin instance
 
         // plugin calling point hooks
-        const char * sHookBeginNewEnvironment = "on_begin_new_environment";
+        const char *sHookBeginNewEnvironment = "on_begin_new_environment";
+        const char *sHookBeginZoneTimestepBeforeSetCurrentWeather = "on_begin_zone_timestep_before_set_current_weather";
+        const char *sHookAfterNewEnvironmentWarmUpIsComplete = "on_after_new_environment_warmup_is_complete";
+        const char *sHookBeginZoneTimestepBeforeInitHeatBalance = "on_begin_zone_timestep_before_init_heat_balance";
+        const char *sHookBeginZoneTimestepAfterInitHeatBalance = "on_begin_zone_timestep_after_init_heat_balance";
+        const char *sHookBeginTimestepBeforePredictor = "on_begin_timestep_before_predictor";
+        const char *sHookAfterPredictorBeforeHVACManagers = "on_after_predictor_before_hvac_managers";
+        const char *sHookAfterPredictorAfterHVACManagers = "on_after_predictor_after_hvac_managers";
+        const char *sHookInsideHVACSystemIterationLoop = "on_inside_hvac_system_iteration_loop";
+        const char *sHookEndOfZoneTimestepBeforeZoneReporting = "on_end_of_zone_timestep_before_zone_reporting";
+        const char *sHookEndOfZoneTimestepAfterZoneReporting = "on_end_of_zone_timestep_after_zone_reporting";
+        const char *sHookEndOfSystemTimestepBeforeHVACReporting = "on_end_of_system_timestep_before_hvac_reporting";
+        const char *sHookEndOfSystemTimestepAfterHVACReporting = "on_end_of_system_timestep_after_hvac_reporting";
+        const char *sHookEndOfZoneSizing = "on_end_of_zone_sizing";
+        const char *sHookEndOfSystemSizing = "on_end_of_system_sizing";
+        const char *sHookAfterComponentInputReadIn = "on_end_of_component_input_read_in";
+        const char *sHookUserDefinedComponentModel = "on_user_defined_component_model";
+        const char *sHookUnitarySystemSizing = "on_unitary_system_sizing";
         bool bHasBeginNewEnvironment = false;
-        const char * sHookAfterNewEnvironmentWarmUpIsComplete = "on_after_new_environment_warmup_is_complete";
+        bool bHasBeginZoneTimestepBeforeSetCurrentWeather = false;
         bool bHasAfterNewEnvironmentWarmUpIsComplete = false;
-        const char * sHookBeginZoneTimestepBeforeInitHeatBalance = "on_begin_zone_timestep_before_init_heat_balance";
         bool bHasBeginZoneTimestepBeforeInitHeatBalance = false;
-        const char * sHookBeginZoneTimestepAfterInitHeatBalance = "on_begin_zone_timestep_after_init_heat_balance";
         bool bHasBeginZoneTimestepAfterInitHeatBalance = false;
-        const char * sHookBeginTimestepBeforePredictor = "on_begin_timestep_before_predictor";
         bool bHasBeginTimestepBeforePredictor = false;
-        const char * sHookAfterPredictorBeforeHVACManagers = "on_after_predictor_before_hvac_managers";
         bool bHasAfterPredictorBeforeHVACManagers = false;
-        const char * sHookAfterPredictorAfterHVACManagers = "on_after_predictor_after_hvac_managers";
         bool bHasAfterPredictorAfterHVACManagers = false;
-        const char * sHookInsideHVACSystemIterationLoop = "on_inside_hvac_system_iteration_loop";
         bool bHasInsideHVACSystemIterationLoop = false;
-        const char * sHookEndOfZoneTimestepBeforeZoneReporting = "on_end_of_zone_timestep_before_zone_reporting";
         bool bHasEndOfZoneTimestepBeforeZoneReporting = false;
-        const char * sHookEndOfZoneTimestepAfterZoneReporting = "on_end_of_zone_timestep_after_zone_reporting";
         bool bHasEndOfZoneTimestepAfterZoneReporting = false;
-        const char * sHookEndOfSystemTimestepBeforeHVACReporting = "on_end_of_system_timestep_before_hvac_reporting";
         bool bHasEndOfSystemTimestepBeforeHVACReporting = false;
-        const char * sHookEndOfSystemTimestepAfterHVACReporting = "on_end_of_system_timestep_after_hvac_reporting";
         bool bHasEndOfSystemTimestepAfterHVACReporting = false;
-        const char * sHookEndOfZoneSizing = "on_end_of_zone_sizing";
         bool bHasEndOfZoneSizing = false;
-        const char * sHookEndOfSystemSizing = "on_end_of_system_sizing";
         bool bHasEndOfSystemSizing = false;
-        const char * sHookAfterComponentInputReadIn = "on_end_of_component_input_read_in";
         bool bHasAfterComponentInputReadIn = false;
-        const char * sHookUserDefinedComponentModel = "on_user_defined_component_model";
         bool bHasUserDefinedComponentModel = false;
-        const char * sHookUnitarySystemSizing = "on_unitary_system_sizing";
         bool bHasUnitarySystemSizing = false;
+#if LINK_WITH_PYTHON
+        PyObject *pModule = nullptr;        // reference to module
+        PyObject *pClassInstance = nullptr; // reference to instantiated class -- *don't decref until the end of the simulation*
+        // precalculated function names as PyObjects
+        PyObject *pBeginNewEnvironment = nullptr;
+        PyObject *pBeginZoneTimestepBeforeSetCurrentWeather = nullptr;
+        PyObject *pAfterNewEnvironmentWarmUpIsComplete = nullptr;
+        PyObject *pBeginZoneTimestepBeforeInitHeatBalance = nullptr;
+        PyObject *pBeginZoneTimestepAfterInitHeatBalance = nullptr;
+        PyObject *pBeginTimestepBeforePredictor = nullptr;
+        PyObject *pAfterPredictorBeforeHVACManagers = nullptr;
+        PyObject *pAfterPredictorAfterHVACManagers = nullptr;
+        PyObject *pInsideHVACSystemIterationLoop = nullptr;
+        PyObject *pEndOfZoneTimestepBeforeZoneReporting = nullptr;
+        PyObject *pEndOfZoneTimestepAfterZoneReporting = nullptr;
+        PyObject *pEndOfSystemTimestepBeforeHVACReporting = nullptr;
+        PyObject *pEndOfSystemTimestepAfterHVACReporting = nullptr;
+        PyObject *pEndOfZoneSizing = nullptr;
+        PyObject *pEndOfSystemSizing = nullptr;
+        PyObject *pAfterComponentInputReadIn = nullptr;
+        PyObject *pUserDefinedComponentModel = nullptr;
+        PyObject *pUnitarySystemSizing = nullptr;
+#endif
     };
 
-    class PluginManager {
+    class PluginManager
+    {
     public:
-        PluginManager();
-        ~PluginManager() {
-#if LINK_WITH_PYTHON
-            Py_FinalizeEx();
-#endif
-        }
-        static int numActiveCallbacks();
-        static void addToPythonPath(const std::string& path, bool userDefinedPath);
-        static std::string sanitizedPath(std::string path); // intentionally not a const& string
-        void setupOutputVariables();
+        explicit PluginManager(EnergyPlusData &state);
+        ~PluginManager();
+
+        static int numActiveCallbacks(EnergyPlusData &state);
+        static void addToPythonPath(EnergyPlusData &state, const fs::path &path, bool userDefinedPath);
+        static fs::path sanitizedPath(fs::path const &path);
+        static void setupOutputVariables(EnergyPlusData &state);
 
         int maxGlobalVariableIndex = -1;
-        void addGlobalVariable(const std::string& name);
-        static int getGlobalVariableHandle(const std::string& name, bool suppress_warning = false);
-        static Real64 getGlobalVariableValue(int handle);
-        static void setGlobalVariableValue(int handle, Real64 value);
+        void addGlobalVariable(EnergyPlusData &state, const std::string &name);
+        static int getGlobalVariableHandle(EnergyPlusData &state, const std::string &name, bool suppress_warning = false);
+        static Real64 getGlobalVariableValue(EnergyPlusData &state, int handle);
+        static void setGlobalVariableValue(EnergyPlusData &state, int handle, Real64 value);
 
         int maxTrendVariableIndex = -1;
-        int getTrendVariableHandle(const std::string& name);
-        Real64 getTrendVariableValue(int handle, int timeIndex);
-        static size_t getTrendVariableHistorySize(int handle);
-        Real64 getTrendVariableAverage(int handle, int count);
-        Real64 getTrendVariableMin(int handle, int count);
-        Real64 getTrendVariableMax(int handle, int count);
-        Real64 getTrendVariableSum(int handle, int count);
-        Real64 getTrendVariableDirection(int handle, int count);
+        static int getTrendVariableHandle(EnergyPlusData &state, const std::string &name);
+        static Real64 getTrendVariableValue(EnergyPlusData &state, int handle, int timeIndex);
+        static size_t getTrendVariableHistorySize(EnergyPlusData &state, int handle);
+        static Real64 getTrendVariableAverage(EnergyPlusData &state, int handle, int count);
+        static Real64 getTrendVariableMin(EnergyPlusData &state, int handle, int count);
+        static Real64 getTrendVariableMax(EnergyPlusData &state, int handle, int count);
+        static Real64 getTrendVariableSum(EnergyPlusData &state, int handle, int count);
+        static Real64 getTrendVariableDirection(EnergyPlusData &state, int handle, int count);
 
-        void updatePluginValues();
+        static void updatePluginValues(EnergyPlusData &state);
 
-        static int getLocationOfUserDefinedPlugin(std::string const &programName);
-        static void runSingleUserDefinedPlugin(int index);
-        static bool anyUnexpectedPluginObjects();
+        static int getLocationOfUserDefinedPlugin(EnergyPlusData &state, std::string const &programName);
+        static void runSingleUserDefinedPlugin(EnergyPlusData &state, int index);
+        static bool anyUnexpectedPluginObjects(EnergyPlusData &state);
     };
 
-    struct PluginTrendVariable {
+    struct PluginTrendVariable
+    {
         std::string name;
         int numValues;
         std::deque<Real64> values;
         std::deque<Real64> times;
         int indexOfPluginVariable;
-        PluginTrendVariable(std::string _name, int _numValues, int _indexOfPluginVariable) :
-            name(std::move(_name)), numValues(_numValues), indexOfPluginVariable(_indexOfPluginVariable)
+        PluginTrendVariable(EnergyPlusData &state, std::string _name, int _numValues, int _indexOfPluginVariable);
+        void reset()
         {
-            // initialize the deque so it can be queried immediately, even with just zeroes
+            this->values.clear();
             for (int i = 1; i <= this->numValues; i++) {
                 this->values.push_back(0);
-            }
-            for (int loop = 1; loop <= _numValues; ++loop) {
-                this->times.push_back(-loop * DataGlobals::TimeStepZone);
             }
         }
     };
 
-    extern std::unique_ptr<PluginManager> pluginManager;
-    extern std::vector<PluginTrendVariable> trends;
-    extern std::vector<std::string> globalVariableNames;
-    extern std::vector<Real64> globalVariableValues;
+} // namespace PluginManagement
 
-    // some flags
-    extern bool fullyReady;
-    extern bool shouldIssueFatalAfterPluginCompletes;
-}
-}
+struct PluginManagerData : BaseGlobalStruct
+{
+    std::map<EMSManager::EMSCallFrom, std::vector<std::function<void(void *)>>> callbacks;
+    std::unique_ptr<PluginManagement::PluginManager> pluginManager;
+    std::vector<PluginManagement::PluginTrendVariable> trends;
+    std::vector<PluginManagement::PluginInstance> plugins;
+
+    std::vector<std::string> globalVariableNames;
+    std::vector<Real64> globalVariableValues;
+    bool fullyReady = false;
+    bool apiErrorFlag = false;
+    std::vector<std::string> const objectsToFind = {
+        "PythonPlugin:OutputVariable", "PythonPlugin:SearchPaths", "PythonPlugin:Instance", "PythonPlugin:Variables", "PythonPlugin:TrendVariable"};
+    void clear_state() override
+    {
+        callbacks.clear();
+#if LINK_WITH_PYTHON == 1
+        for (auto &plugin : plugins) {
+            plugin.shutdown(); // clear unmanaged memory first
+        }
+        trends.clear();
+        globalVariableNames.clear();
+        globalVariableValues.clear();
+        plugins.clear();
+        fullyReady = false;
+        apiErrorFlag = false;
+        auto *p = pluginManager.release();
+        delete p;
+#endif
+    }
+};
+
+} // namespace EnergyPlus
 
 #endif // EPLUS_PLUGIN_MANAGER_HH

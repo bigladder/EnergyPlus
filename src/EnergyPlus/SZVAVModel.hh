@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -66,6 +66,9 @@
 
 namespace EnergyPlus {
 
+// Forward declarations
+struct EnergyPlusData;
+
 namespace SZVAVModel {
 
     // Data
@@ -74,7 +77,6 @@ namespace SZVAVModel {
     // parts of the simulation.
 
     // MODULE PARAMETER DEFINITIONS
-    // na
 
     // DERIVED TYPE DEFINITIONS
     // na
@@ -90,7 +92,8 @@ namespace SZVAVModel {
 
     // Functions
 
-    void calcSZVAVModel(PackagedTerminalHeatPump::PTUnitData &SZVAVModel,
+    void calcSZVAVModel(EnergyPlusData &state,
+                        PackagedTerminalHeatPump::PTUnitData &SZVAVModel,
                         int const &SysIndex,
                         bool const &FirstHVACIteration,
                         bool const &CoolingLoad,
@@ -104,7 +107,8 @@ namespace SZVAVModel {
 
     );
 
-    void calcSZVAVModel(FanCoilUnits::FanCoilData &SZVAVModel,
+    void calcSZVAVModel(EnergyPlusData &state,
+                        FanCoilUnits::FanCoilData &SZVAVModel,
                         int const &SysIndex,
                         bool const &FirstHVACIteration,
                         bool const &CoolingLoad,
@@ -118,7 +122,8 @@ namespace SZVAVModel {
 
     );
 
-    void calcSZVAVModel(UnitarySystems::UnitarySys &SZVAVModel,
+    void calcSZVAVModel(EnergyPlusData &state,
+                        UnitarySystems::UnitarySys &SZVAVModel,
                         int const &SysIndex,
                         bool const &FirstHVACIteration,
                         bool const &CoolingLoad,

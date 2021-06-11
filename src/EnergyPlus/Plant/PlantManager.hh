@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -52,75 +52,105 @@
 #include <ObjexxFCL/Array1D.hh>
 
 // EnergyPlus Headers
+#include <EnergyPlus/Data/BaseData.hh>
 #include <EnergyPlus/DataGlobals.hh>
-#include <EnergyPlus/Plant/DataPlant.hh>
 #include <EnergyPlus/EnergyPlus.hh>
+#include <EnergyPlus/Plant/DataPlant.hh>
 
 namespace EnergyPlus {
 
+// Forward declarations
+struct EnergyPlusData;
+
 namespace PlantManager {
 
-    // Using/Aliasing
-    using DataPlant::BranchData;
-    using DataPlant::MixerData;
-    using DataPlant::SplitterData;
-
-    // MODULE PARAMETER DEFINITIONS
-    extern int const Plant;
-    extern int const Condenser;
-    extern int const TempSetPt;
-    extern int const FlowSetPt;
-    extern bool InitLoopEquip;
-    extern bool GetCompSizFac;
-
-    extern Array1D_int SupplySideInletNode;  // Node number for the supply side inlet
-    extern Array1D_int SupplySideOutletNode; // Node number for the supply side outlet
-    extern Array1D_int DemandSideInletNode;  // Inlet node on the demand side
-
-    void clear_state();
-
-    void ManagePlantLoops(bool FirstHVACIteration,
+    void ManagePlantLoops(EnergyPlusData &state,
+                          bool FirstHVACIteration,
                           bool &SimAirLoops,         // True when the air loops need to be (re)simulated
                           bool &SimZoneEquipment,    // True when zone equipment components need to be (re)simulated
                           bool &SimNonZoneEquipment, // True when non-zone equipment components need to be (re)simulated
                           bool &SimPlantLoops,       // True when some part of Plant needs to be (re)simulated
-                          bool &SimElecCircuits      // True when electic circuits need to be (re)simulated
+                          bool &SimElecCircuits      // True when electric circuits need to be (re)simulated
     );
 
-    void GetPlantLoopData();
+    void GetPlantLoopData(EnergyPlusData &state);
 
-    void GetPlantInput();
+    void GetPlantInput(EnergyPlusData &state);
 
-    void SetupReports();
+    void SetupReports(EnergyPlusData &state);
 
-    void InitializeLoops(bool FirstHVACIteration); // true if first iteration of the simulation
+    void InitializeLoops(EnergyPlusData &state, bool FirstHVACIteration); // true if first iteration of the simulation
 
-    void ReInitPlantLoopsAtFirstHVACIteration();
+    void ReInitPlantLoopsAtFirstHVACIteration(EnergyPlusData &state);
 
-    void UpdateNodeThermalHistory();
+    void UpdateNodeThermalHistory(EnergyPlusData &state);
 
-    void CheckPlantOnAbort();
+    void CheckPlantOnAbort(EnergyPlusData &state);
 
-    void InitOneTimePlantSizingInfo(int LoopNum); // loop being initialized for sizing
+    void InitOneTimePlantSizingInfo(EnergyPlusData &state, int LoopNum); // loop being initialized for sizing
 
-    void SizePlantLoop(int LoopNum, // Supply side loop being simulated
+    void SizePlantLoop(EnergyPlusData &state,
+                       int LoopNum, // Supply side loop being simulated
                        bool OkayToFinish);
 
-    void ResizePlantLoopLevelSizes(int LoopNum);
+    void ResizePlantLoopLevelSizes(EnergyPlusData &state, int LoopNum);
 
-    void SetupInitialPlantCallingOrder();
+    void SetupInitialPlantCallingOrder(EnergyPlusData &state);
 
-    void RevisePlantCallingOrder();
+    void RevisePlantCallingOrder(EnergyPlusData &state);
 
-    int FindLoopSideInCallingOrder(int LoopNum, int LoopSide);
+    int FindLoopSideInCallingOrder(EnergyPlusData &state, int LoopNum, int LoopSide);
 
-    void SetupBranchControlTypes();
+    void SetupBranchControlTypes(EnergyPlusData &state);
 
-    void CheckIfAnyPlant();
+    void CheckIfAnyPlant(EnergyPlusData &state);
 
-    void CheckOngoingPlantWarnings();
+    void CheckOngoingPlantWarnings(EnergyPlusData &state);
+
+    struct EmptyPlantComponent : PlantComponent
+    {
+        // this is for purely air side equipment or similar that dont need anything at all done on plant for now
+        // this could be a placeholder until those components are more integrated with plant side calcs.
+        void simulate([[maybe_unused]] EnergyPlusData &state,
+                      [[maybe_unused]] const PlantLocation &calledFromLocation,
+                      [[maybe_unused]] bool FirstHVACIteration,
+                      [[maybe_unused]] Real64 &CurLoad,
+                      [[maybe_unused]] bool RunFlag) override
+        {
+            // this is empty on purpose
+        }
+    };
 
 } // namespace PlantManager
+
+struct PlantMgrData : BaseGlobalStruct
+{
+
+    bool GetCompSizFac = true;
+    bool SupplyEnvrnFlag = true;
+    bool MySetPointCheckFlag = true;
+    Array1D_bool PlantLoopSetPointInitFlag;
+    bool MyEnvrnFlag = true;
+    int OtherLoopCallingIndex = 0;
+    int OtherLoopDemandSideCallingIndex = 0;
+    int NewOtherDemandSideCallingIndex = 0;
+    int newCallingIndex = 0;
+    PlantManager::EmptyPlantComponent dummyPlantComponent;
+
+    void clear_state() override
+    {
+        this->GetCompSizFac = true;
+        this->SupplyEnvrnFlag = true;
+        this->MySetPointCheckFlag = true;
+        this->PlantLoopSetPointInitFlag.clear();
+        this->MyEnvrnFlag = true;
+        this->OtherLoopCallingIndex = 0;
+        this->OtherLoopDemandSideCallingIndex = 0;
+        this->NewOtherDemandSideCallingIndex = 0;
+        this->newCallingIndex = 0;
+        this->dummyPlantComponent = {};
+    }
+};
 
 } // namespace EnergyPlus
 
