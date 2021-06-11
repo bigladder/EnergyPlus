@@ -65,30 +65,23 @@
 #include <EnergyPlus/DataAirLoop.hh>
 #include <EnergyPlus/DataEnvironment.hh>
 #include <EnergyPlus/DataHVACGlobals.hh>
-<<<<<<< HEAD
-#include <EnergyPlus/DataLoopNode.hh>
 #include <EnergyPlus/Plant/DataPlant.hh>
-=======
 #include <EnergyPlus/DataHeatBalFanSys.hh>
 #include <EnergyPlus/DataHeatBalance.hh>
 #include <EnergyPlus/DataLoopNode.hh>
->>>>>>> 42826b2bf46d43119773c1ac48b7979b19348773
 #include <EnergyPlus/DataSizing.hh>
 #include <EnergyPlus/DataZoneEnergyDemands.hh>
 #include <EnergyPlus/DataZoneEquipment.hh>
 #include <EnergyPlus/FanCoilUnits.hh>
 #include <EnergyPlus/Fans.hh>
 #include <EnergyPlus/FluidProperties.hh>
-<<<<<<< HEAD
-#include <EnergyPlus/OutputFiles.hh>
-=======
 #include <EnergyPlus/General.hh>
 #include <EnergyPlus/GlobalNames.hh>
 #include <EnergyPlus/HeatBalanceManager.hh>
 #include <EnergyPlus/MixedAir.hh>
+#include <EnergyPlus/OutputFiles.hh>
 #include <EnergyPlus/OutputReportPredefined.hh>
 #include <EnergyPlus/Plant/DataPlant.hh>
->>>>>>> 42826b2bf46d43119773c1ac48b7979b19348773
 #include <EnergyPlus/Psychrometrics.hh>
 #include <EnergyPlus/ReportCoilSelection.hh>
 #include <EnergyPlus/ScheduleManager.hh>
