@@ -61,9 +61,11 @@
 #include <EnergyPlus/DataHeatBalFanSys.hh>
 #include <EnergyPlus/DataHeatBalSurface.hh>
 #include <EnergyPlus/DataHeatBalance.hh>
+#include <EnergyPlus/DataStringGlobals.hh>
 #include <EnergyPlus/DataSurfaces.hh>
 #include <EnergyPlus/DataSystemVariables.hh>
 #include <EnergyPlus/DataZoneControls.hh>
+#include <EnergyPlus/General.hh>
 #include <EnergyPlus/HeatBalanceKivaManager.hh>
 #include <EnergyPlus/InternalHeatGains.hh>
 #include <EnergyPlus/Material.hh>
@@ -135,26 +137,26 @@ void KivaInstanceMap::initGround(EnergyPlusData &state, const KivaWeatherData &k
     if (constructionNum == 0) {
         constructionName = "Default Footing Wall Construction";
     } else {
-        constructionName = DataHeatBalance::Construct(constructionNum).Name;
+        constructionName = state.dataConstruction->Construct(constructionNum).Name;
     }
 
     ss.dir = format("{}/{} {:.2R} {}",
-                    FileSystem::getAbsolutePath(DataStringGlobals::outDirPathName),
+                    FileSystem::getAbsolutePath(state.dataStrGlobals->outDirPath),
                     state.dataSurface->Surface(floorSurface).Name,
-                    ground.foundation.foundationDepth,
+                    instance.ground->foundation.foundationDepth,
                     constructionName);
 
     debugDir = ss.dir;
     plotNum = 0;
-    double &l = ground.foundation.reductionLength2;
+    double &l = instance.ground->foundation.reductionLength2;
     const double width = 6.0;
-    const double depth = ground.foundation.foundationDepth + width / 2.0;
+    const double depth = instance.ground->foundation.foundationDepth + width / 2.0;
     const double range = max(width, depth);
     ss.xRange = {l - range / 2.0, l + range / 2.0};
     ss.yRange = {0.5, 0.5};
-    ss.zRange = {-range, ground.foundation.wall.heightAboveGrade};
+    ss.zRange = {-range, instance.ground->foundation.wall.heightAboveGrade};
 
-    gp = Kiva::GroundPlot(ss, ground.domain, ground.foundation);
+    gp = Kiva::GroundPlot(ss, instance.ground->domain, instance.ground->foundation);
 #endif
 
     int numAccelaratedTimesteps = 3;
@@ -1148,15 +1150,16 @@ void KivaManager::calcKivaInstances(EnergyPlusData &state)
         kv.setBoundaryConditions(state);
         kv.instance.calculate(timestep);
         kv.instance.calculate_surface_averages();
-        if (state.dataEnvrn->Month == 1 && state.dataEnvrn->DayOfMonth == 1 && state.dataGlobal->HourOfDay == 1 && state.dataGlobal->TimeStep == 1) {
-            kv.plotDomain();
+        if ((state.dataEnvrn->Month == 1 || state.dataEnvrn->Month == 6) &&
+            state.dataEnvrn->DayOfMonth == 1 /* && state.dataGlobal->HourOfDay == 1*/ && state.dataGlobal->TimeStep == 1) {
+            kv.plotDomain(state);
         }
     }
 
     calcKivaSurfaceResults(state);
 }
 
-void KivaInstanceMap::plotDomain()
+void KivaInstanceMap::plotDomain(EnergyPlusData &state)
 {
 
 #ifdef GROUND_PLOT
@@ -1170,13 +1173,18 @@ void KivaInstanceMap::plotDomain()
                 std::size_t index = (i - gp.iMin) + nI * (j - gp.jMin) + nI * nJ * (k - gp.kMin);
                 if (gp.snapshotSettings.plotType == Kiva::SnapshotSettings::P_TEMP) {
                     if (gp.snapshotSettings.outputUnits == Kiva::SnapshotSettings::IP) {
-                        gp.TDat.a[index] = (ground.TNew[i][j][k] - 273.15) * 9 / 5 + 32.0;
+                        gp.TDat.a[index] = (instance.ground->TNew[index] - 273.15) * 9 / 5 + 32.0;
                     } else {
-                        gp.TDat.a[index] = ground.TNew[i][j][k] - 273.15;
+                        gp.TDat.a[index] = instance.ground->TNew[index] - 273.15;
                     }
                 } else {
                     double &du = gp.distanceUnitConversion;
-                    std::vector<double> Qflux = ground.calculateHeatFlux(i, j, k);
+                    std::vector<double> Qflux = instance.ground->domain.cell[index]->calculateHeatFlux(instance.ground->foundation.numberOfDimensions,
+                                                                                                       instance.ground->TNew[index],
+                                                                                                       instance.ground->nX,
+                                                                                                       instance.ground->nY,
+                                                                                                       instance.ground->nZ,
+                                                                                                       instance.ground->domain.cell);
                     double &Qx = Qflux[0];
                     double &Qy = Qflux[1];
                     double &Qz = Qflux[2];
@@ -1201,32 +1209,33 @@ void KivaInstanceMap::plotDomain()
 #ifndef NDEBUG
 
     std::ofstream output;
-    output.open(debugDir + "/" + General::RoundSigDigits(plotNum) + ".csv");
+    output.open(format("{}/{}.csv", debugDir, plotNum));
 
     std::size_t j = 0;
 
     output << ", ";
 
-    for (std::size_t i = 0; i < ground.nX; i++) {
+    for (std::size_t i = 0; i < instance.ground->nX; i++) {
 
         output << ", " << i;
     }
 
     output << "\n, ";
 
-    for (std::size_t i = 0; i < ground.nX; i++) {
+    for (std::size_t i = 0; i < instance.ground->nX; i++) {
 
-        output << ", " << ground.domain.meshX.centers[i];
+        output << ", " << instance.ground->domain.mesh->centers[i];
     }
 
     output << "\n";
 
-    for (std::size_t k = ground.nZ - 1; k < ground.nZ; k--) { // k >= 0 used to be commented out but in the loop exit conditional check here
+    for (std::size_t k = instance.ground->nZ - 1; k < instance.ground->nZ;
+         k--) { // k >= 0 used to be commented out but in the loop exit conditional check here
 
-        output << k << ", " << ground.domain.meshZ.centers[k];
+        output << k << ", " << instance.ground->domain.mesh->centers[k];
 
-        for (std::size_t i = 0; i < ground.nX; i++) {
-            output << ", " << ground.TNew[i][j][k] - 273.15;
+        for (std::size_t i = 0; i < instance.ground->nX; i++) {
+            output << ", " << instance.ground->TNew[i] - 273.15;
         }
 
         output << "\n";

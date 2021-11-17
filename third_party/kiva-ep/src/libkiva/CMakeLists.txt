@@ -29,7 +29,7 @@ set( libkiva_VERSION_MINOR 6 )
 set( libkiva_VERSION_PATCH 1 )
 
 if(EXISTS "${kiva_SOURCE_DIR}/.git")
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/arch.txt ${KIVA_BUILD_CONFIG})
+  file(WRITE ${CMAKE_BINARY_DIR}/arch.txt ${KIVA_BUILD_CONFIG})
 
   string(TOLOWER "${TARGET_OS}-${BIT}" KIVA_PACKAGE_CONFIG)
   set(KIVA_PACKAGE_CONFIG ${KIVA_PACKAGE_CONFIG} PARENT_SCOPE)
@@ -148,7 +148,7 @@ set(kiva_src Aggregator.cpp
              Instance.hpp
              Mesher.cpp
              Mesher.hpp
-             "${PROJECT_BINARY_DIR}/Version.hpp" )
+             Version.hpp )
 
 include_directories("${kiva_BINARY_DIR}/src/libkiva")
 
