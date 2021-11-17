@@ -3163,7 +3163,8 @@ void ComputeIntSolarAbsorpFactors(EnergyPlusData &state)
 
                 int const ConstrNum = state.dataSurface->SurfActiveConstruction(SurfNum);
                 // last minute V3.1
-                if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0) { // Opaque surface
+                if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0 &&
+                    !state.dataConstruction->Construct(ConstrNum).TypeIsWindow) { // Opaque surface
                     if (AreaSum > 0.0)
                         state.dataSolarShading->SurfIntAbsFac(SurfNum) =
                             state.dataSurface->Surface(SurfNum).Area * state.dataConstruction->Construct(ConstrNum).InsideAbsorpSolar / AreaSum;
@@ -3209,7 +3210,8 @@ void ComputeIntSolarAbsorpFactors(EnergyPlusData &state)
 
                 for (int const SurfNum : thisEnclosure.SurfacePtr) {
                     int const ConstrNum = state.dataSurface->SurfActiveConstruction(SurfNum);
-                    if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0) { // Opaque surface
+                    if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0 &&
+                        !state.dataConstruction->Construct(ConstrNum).TypeIsWindow) { // Opaque surface
                         if (AreaSum > 0.0)
                             state.dataSolarShading->SurfIntAbsFac(SurfNum) =
                                 state.dataSurface->Surface(SurfNum).Area * state.dataConstruction->Construct(ConstrNum).InsideAbsorpSolar / AreaSum;
@@ -5361,7 +5363,8 @@ void DetermineShadowingCombinations(EnergyPlusData &state)
             if (SBSNR == GRSNR) continue;                                      // Surface itself cannot be its own subsurface
             if (state.dataSurface->Surface(SBSNR).BaseSurf != GRSNR) continue; // Ignore subsurfaces of other surfaces and other surfaces
 
-            if (state.dataConstruction->Construct(state.dataSurface->Surface(SBSNR).Construction).TransDiff > 0.0)
+            if (state.dataConstruction->Construct(state.dataSurface->Surface(SBSNR).Construction).TransDiff > 0.0 ||
+                state.dataConstruction->Construct(state.dataSurface->Surface(SBSNR).Construction).TypeIsWindow)
                 HasWindow = true;             // Check for window
             CHKSBS(state, HTS, GRSNR, SBSNR); // Check that the receiving surface completely encloses the subsurface;
             // severe error if not
@@ -7424,7 +7427,8 @@ void CalcInteriorSolarDistribution(EnergyPlusData &state)
                             // Back surface area irradiated by beam solar from an exterior window, projected onto window plane
                             Real64 BOverlap = TBm * AOverlap * CosInc; //[m2]
                             // AOverlap multiplied by exterior window beam transmittance and cosine of incidence angle
-                            if (state.dataConstruction->Construct(ConstrNumBack).TransDiff <= 0.0) {
+                            if (state.dataConstruction->Construct(ConstrNumBack).TransDiff <= 0.0 &&
+                                !state.dataConstruction->Construct(ConstrNumBack).TypeIsWindow) {
 
                                 // Back surface is opaque interior or exterior wall
                                 // Interior solar absorptance of opaque surface
@@ -8127,7 +8131,8 @@ void CalcInteriorSolarDistribution(EnergyPlusData &state)
                                             }
                                         }
                                     } else {
-                                        if (state.dataConstruction->Construct(ConstrNumBack).TransDiff <= 0.0) {
+                                        if (state.dataConstruction->Construct(ConstrNumBack).TransDiff <= 0.0 &&
+                                            !state.dataConstruction->Construct(ConstrNumBack).TypeIsWindow) {
                                             // Do not take into account this window if it is scheduled for surface gains
                                             Real64 AbsIntSurf = state.dataConstruction->Construct(ConstrNumBack).InsideAbsorpSolar;
                                             state.dataSurface->SurfOpaqAI(BackSurfaceNumber) +=
@@ -8162,7 +8167,8 @@ void CalcInteriorSolarDistribution(EnergyPlusData &state)
                                 state.dataHeatBal->SurfWinOverlapAreas(state.dataGlobal->HourOfDay, state.dataGlobal->TimeStep, IBack, SurfNum);
                             Real64 BOverlap = TBm * AOverlap * CosInc; //[m2]
 
-                            if (state.dataConstruction->Construct(ConstrNumBack).TransDiff <= 0.0) {
+                            if (state.dataConstruction->Construct(ConstrNumBack).TransDiff <= 0.0 &&
+                                !state.dataConstruction->Construct(ConstrNumBack).TypeIsWindow) {
 
                                 // Back surface is opaque interior or exterior wall
                                 Real64 AbsIntSurf = state.dataHeatBalSurf->SurfAbsSolarInt(BackSurfNum);
@@ -8271,7 +8277,8 @@ void CalcInteriorSolarDistribution(EnergyPlusData &state)
                         Real64 BTOTWinZone = TBm * SunLitFract * state.dataSurface->Surface(SurfNum).Area * CosInc * InOutProjSLFracMult; //[m2]
                         Real64 AbsBeamTotWin = 0.0;
 
-                        if (state.dataConstruction->Construct(FlConstrNum).TransDiff <= 0.0) {
+                        if (state.dataConstruction->Construct(FlConstrNum).TransDiff <= 0.0 &&
+                            !state.dataConstruction->Construct(FlConstrNum).TypeIsWindow) {
                             // Opaque surface
                             state.dataSurface->SurfOpaqAI(FloorNum) +=
                                 BTOTWinZone * state.dataSolarShading->SurfIntAbsFac(FloorNum) / state.dataSurface->Surface(FloorNum).Area; //[-]
@@ -8558,7 +8565,8 @@ void CalcAbsorbedOnExteriorOpaqueSurfaces(EnergyPlusData &state)
             // EXTERIOR BEAM SOLAR RADIATION ABSORBED ON THE OUTSIDE OF OPAQUE SURFACES
             //-------------------------------------------------------------------------
 
-            if (SunLitFract > 0.0 && state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0) {
+            if (SunLitFract > 0.0 && state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0 &&
+                !state.dataConstruction->Construct(ConstrNum).TypeIsWindow) {
                 state.dataSurface->SurfOpaqAO(SurfNum) = state.dataConstruction->Construct(ConstrNum).OutsideAbsorpSolar * CosInc * SunLitFract;
 
                 // Note: movable insulation, if present, is accounted for in subr. InitIntSolarDistribution,
@@ -8753,7 +8761,8 @@ void CalcInteriorSolarDistributionWCESimple(EnergyPlusData &state)
                     Real64 AOverlap = state.dataHeatBal->SurfWinOverlapAreas(state.dataGlobal->HourOfDay, state.dataGlobal->TimeStep, IBack, SurfNum);
                     Real64 BOverlap = TBm * AOverlap * CosInc; //[m2]
 
-                    if (state.dataConstruction->Construct(ConstrNumBack).TransDiff <= 0.0) {
+                    if (state.dataConstruction->Construct(ConstrNumBack).TransDiff <= 0.0 &&
+                        !state.dataConstruction->Construct(ConstrNumBack).TypeIsWindow) {
                         // Back surface is opaque interior or exterior wall
 
                         Real64 AbsIntSurf = state.dataHeatBalSurf->SurfAbsSolarInt(BackSurfNum);
@@ -8770,7 +8779,8 @@ void CalcInteriorSolarDistributionWCESimple(EnergyPlusData &state)
                     Real64 BTOTWinZone = TBm * SunLitFract * state.dataSurface->Surface(SurfNum).Area * CosInc *
                                          window.InOutProjSLFracMult(state.dataGlobal->HourOfDay); //[m2]
 
-                    if (state.dataConstruction->Construct(state.dataSurface->Surface(FloorNum).Construction).TransDiff <= 0.0) {
+                    if (state.dataConstruction->Construct(state.dataSurface->Surface(FloorNum).Construction).TransDiff <= 0.0 &&
+                        !state.dataConstruction->Construct(state.dataSurface->Surface(FloorNum).Construction).TypeIsWindow) {
                         // Opaque surface
                         state.dataSurface->SurfOpaqAI(FloorNum) +=
                             BTOTWinZone * state.dataSolarShading->SurfIntAbsFac(FloorNum) / state.dataSurface->Surface(FloorNum).Area; //[-]
@@ -9311,7 +9321,7 @@ void SHDSBS(EnergyPlusData &state,
             }
 
             // Determine transmittance and absorptances of sunlit window.
-            if (state.dataConstruction->Construct(K).TransDiff > 0.0) {
+            if (state.dataConstruction->Construct(K).TransDiff > 0.0 || state.dataConstruction->Construct(K).TypeIsWindow) {
 
                 if (!state.dataSolarShading->CalcSkyDifShading) { // Overlaps calculation is only done for beam solar
                     // shading, not for sky diffuse solar shading
@@ -11747,7 +11757,8 @@ void CalcWinTransDifSolInitialDistribution(EnergyPlusData &state)
                 // Calculate diffuse solar from current exterior window absorbed and reflected by current heat transfer surface
                 // And calculate transmitted diffuse solar to adjacent zones through interior windows
                 int const ConstrNum = state.dataSurface->SurfActiveConstruction(HeatTransSurfNum);
-                if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0) { // Interior Opaque Surface
+                if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0 &&
+                    !state.dataConstruction->Construct(ConstrNum).TypeIsWindow) { // Interior Opaque Surface
 
                     // Determine the inside (back) diffuse solar absorptance
                     // and reflectance of the current heat transfer surface
@@ -12235,7 +12246,8 @@ void CalcInteriorWinTransDifSolInitialDistribution(
         // Calculate diffuse solar from current interior window absorbed and reflected by current heat transfer surface
         // And calculate transmitted diffuse solar to adjacent zones through interior windows
         int const ConstrNum = state.dataSurface->SurfActiveConstruction(HeatTransSurfNum);
-        if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0) { // Interior Opaque Surface
+        if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0 &&
+            !state.dataConstruction->Construct(ConstrNum).TypeIsWindow) { // Interior Opaque Surface
 
             // Determine the inside (back) diffuse solar absorptance
             // and reflectance of the current heat transfer surface

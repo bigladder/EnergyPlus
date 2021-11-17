@@ -3013,7 +3013,8 @@ void InitSolarHeatGains(EnergyPlusData &state)
                 if (ConstrNum > 0) {
                     int SurfSolIncPtr = SurfaceScheduledSolarInc(state, SurfNum, ConstrNum);
                     if (SurfSolIncPtr == 0) {
-                        if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0) {    // Opaque surface
+                        if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0 &&
+                            !state.dataConstruction->Construct(ConstrNum).TypeIsWindow) {       // Opaque surface
                             int ShelfNum = state.dataSurface->SurfDaylightingShelfInd(SurfNum); // Daylighting shelf object number
                             int InShelfSurf = 0;                                                // Inside daylighting shelf surface number
                             if (ShelfNum > 0) {
@@ -4220,7 +4221,7 @@ void ComputeIntSWAbsorpFactors(EnergyPlusData &state)
 
         for (int const SurfNum : state.dataViewFactor->EnclSolInfo(enclosureNum).SurfacePtr) {
             int const ConstrNum = state.dataSurface->SurfActiveConstruction(SurfNum);
-            if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0) {
+            if (state.dataConstruction->Construct(ConstrNum).TransDiff <= 0.0 && !state.dataConstruction->Construct(ConstrNum).TypeIsWindow) {
                 // Opaque surface
                 Real64 AbsIntSurf = state.dataHeatBalSurf->SurfAbsSolarInt(SurfNum); // Inside surface short-wave absorptance
                 SUM1 += Surface(SurfNum).Area * AbsIntSurf;
@@ -4392,7 +4393,9 @@ void ComputeDifSolExcZonesWIZWindows(EnergyPlusData &state, int const NumberOfEn
         if (!Surface(SurfNum).HeatTransSurf) continue;
         if (Surface(SurfNum).ExtBoundCond <= 0) continue;
         if (Surface(SurfNum).ExtBoundCond == SurfNum) continue;
-        if (state.dataConstruction->Construct(Surface(SurfNum).Construction).TransDiff <= 0.0) continue;
+        if (state.dataConstruction->Construct(Surface(SurfNum).Construction).TransDiff <= 0.0 &&
+            !state.dataConstruction->Construct(Surface(SurfNum).Construction).TypeIsWindow)
+            continue;
 
         int surfEnclNum = Surface(SurfNum).SolarEnclIndex;
         if (!state.dataViewFactor->EnclSolInfo(surfEnclNum).HasInterZoneWindow) continue;
