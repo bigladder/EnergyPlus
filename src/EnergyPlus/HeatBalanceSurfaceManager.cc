@@ -5484,6 +5484,12 @@ namespace HeatBalanceSurfaceManager {
                 surfaceArea;
             QRadHVACInReport(SurfNum) = QdotRadHVACInRep(SurfNum) * TimeStepZoneSec;
 
+            if (Surface(SurfNum).HeatTransferAlgorithm == HeatTransferModel_Kiva) {
+                OpaqSurfInsFaceConductionFlux(SurfNum) = -(QdotConvInRepPerArea(SurfNum) + QdotRadNetSurfInRepPerArea(SurfNum) +
+                                                         QdotRadHVACInRepPerArea(SurfNum) + QdotRadIntGainsInRepPerArea(SurfNum) +
+                                                         QdotRadSolarInRepPerArea(SurfNum) + QdotRadLightsInRepPerArea(SurfNum));
+                OpaqSurfInsFaceConduction(SurfNum) = OpaqSurfInsFaceConductionFlux(SurfNum) * DataSurfaces::Surface(SurfNum).Area;
+            }
             if (Surface(SurfNum).Class == SurfaceClass_Floor || Surface(SurfNum).Class == SurfaceClass_Wall ||
                 Surface(SurfNum).Class == SurfaceClass_IntMass || Surface(SurfNum).Class == SurfaceClass_Roof ||
                 Surface(SurfNum).Class == SurfaceClass_Door) {
@@ -6509,7 +6515,7 @@ namespace HeatBalanceSurfaceManager {
 
             if (DataHeatBalance::AnyKiva) {
                 for (auto &kivaSurf : SurfaceGeometry::kivaManager.surfaceMap) {
-                    TempSurfIn(kivaSurf.first) = kivaSurf.second.results.Tavg - DataGlobals::KelvinConv; // TODO: Use average radiant temp? Trad?
+                    TempSurfIn(kivaSurf.first) = kivaSurf.second.results.Trad - DataGlobals::KelvinConv;
                 }
             }
 

@@ -391,8 +391,8 @@ namespace HeatBalanceKivaManager {
         for (auto &wl : wallSurfaces) {
             Real64 Q = DataHeatBalSurface::QRadSWInAbs(wl) + // solar
                        DataHeatBalance::QRadThermInAbs(wl) + // internal gains
-                       DataHeatBalFanSys::QHTRadSysSurf(wl) + DataHeatBalFanSys::QHWBaseboardSurf(floorSurface) +
-                       DataHeatBalFanSys::QCoolingPanelSurf(wl) + DataHeatBalFanSys::QSteamBaseboardSurf(floorSurface) +
+                       DataHeatBalFanSys::QHTRadSysSurf(wl) + DataHeatBalFanSys::QHWBaseboardSurf(wl) + DataHeatBalFanSys::QCoolingPanelSurf(wl) +
+                       DataHeatBalFanSys::QSteamBaseboardSurf(wl) +
                        DataHeatBalFanSys::QElecBaseboardSurf(wl); // HVAC
 
             Real64 &A = DataSurfaces::Surface(wl).Area;

@@ -2062,8 +2062,10 @@ namespace ThermalComfort {
             }
         }
 
-        // Now weight the MRT--half comes from the surface used for weighting (SurfNum) and the rest from the adjusted MRT that excludes this surface
+        // Now weight the MRT
         if (ZoneAESum(ZoneNum) > 0.01) {
+            CalcSurfaceWeightedMRT = SumAET / ZoneAESum(ZoneNum);
+            // --half comes from the surface used for weighting (SurfNum) and the rest from the adjusted MRT that excludes this surface
             CalcSurfaceWeightedMRT = 0.5 * (TH(2, 1, SurfNum) + (SumAET / ZoneAESum(ZoneNum)));
         } else {
             if (FirstTimeError) {
