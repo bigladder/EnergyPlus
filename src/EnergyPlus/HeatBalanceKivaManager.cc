@@ -1243,13 +1243,21 @@ void KivaManager::calcKivaSurfaceResults(EnergyPlusData &state)
 {
     for (int surfNum = 1; surfNum <= (int)state.dataSurface->Surface.size(); ++surfNum) {
         if (state.dataSurface->Surface(surfNum).ExtBoundCond == DataSurfaces::KivaFoundation) {
-            std::pair<EnergyPlusData *, std::string> contextPair{&state, "Surface=\"" + state.dataSurface->Surface(surfNum).Name + "\""};
-            Kiva::setMessageCallback(kivaErrorCallback, &contextPair);
+//            std::pair<EnergyPlusData *, std::string> contextPair{&state, "Surface=\"" + state.dataSurface->Surface(surfNum).Name + "\""};
+            std::string contextStr = "Surface=\"" + state.dataSurface->Surface(surfNum).Name + "\"";
+            KivaManager::setMessageCallbackContext(state, contextStr);
             surfaceMap[surfNum].calc_weighted_results();
             state.dataHeatBalSurf->SurfHConvInt(surfNum) = state.dataSurfaceGeometry->kivaManager.surfaceMap[surfNum].results.hconv;
         }
     }
     Kiva::setMessageCallback(kivaErrorCallback, nullptr);
+}
+
+std::unique_ptr<std::pair<EnergyPlusData*, std::string>> KivaManager::setMessageCallbackContext(EnergyPlusData& state, std::string contextStr)
+{
+    auto contextPtr = std::make_unique<std::pair<EnergyPlusData*, std::string>>(&state, contextStr);
+    Kiva::setMessageCallback(kivaErrorCallback, contextPtr.get());
+    return contextPtr;
 }
 
 void KivaManager::defineDefaultFoundation(EnergyPlusData &state)
