@@ -377,7 +377,7 @@ namespace HeatBalanceKivaManager {
                                DataHeatBalFanSys::QElecBaseboardSurf(floorSurface); // HVAC
 
         bcs->slabConvectiveTemp = DataHeatBalance::TempEffBulkAir(floorSurface) + DataGlobals::KelvinConv;
-        bcs->slabRadiantTemp = ThermalComfort::CalcSurfaceWeightedMRT(zoneNum, floorSurface) + DataGlobals::KelvinConv;
+        bcs->slabRadiantTemp = ThermalComfort::CalcSurfaceWeightedMRT(zoneNum, floorSurface, false) + DataGlobals::KelvinConv;
         bcs->gradeForcedTerm = kmPtr->surfaceConvMap[floorSurface].f;
         bcs->gradeConvectionAlgorithm = kmPtr->surfaceConvMap[floorSurface].out;
         bcs->slabConvectionAlgorithm = kmPtr->surfaceConvMap[floorSurface].in;
@@ -397,7 +397,7 @@ namespace HeatBalanceKivaManager {
 
             Real64 &A = DataSurfaces::Surface(wl).Area;
 
-            Real64 Trad = ThermalComfort::CalcSurfaceWeightedMRT(zoneNum, wl);
+            Real64 Trad = ThermalComfort::CalcSurfaceWeightedMRT(zoneNum, wl, false);
             Real64 Tconv = DataHeatBalance::TempEffBulkAir(wl);
 
             QAtotal += Q * A;

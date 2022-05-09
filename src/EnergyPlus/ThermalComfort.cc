@@ -2003,7 +2003,7 @@ namespace ThermalComfort {
         return CalcAngleFactorMRT;
     }
 
-    Real64 CalcSurfaceWeightedMRT(int const ZoneNum, int const SurfNum)
+    Real64 CalcSurfaceWeightedMRT(int const ZoneNum, int const SurfNum, bool AverageWithSurface)
     {
 
         // Purpose: Calculate a modified zone MRT that excludes the Surface( SurfNum ).
@@ -2064,13 +2064,22 @@ namespace ThermalComfort {
 
         // Now weight the MRT--half comes from the surface used for weighting (SurfNum) and the rest from the adjusted MRT that excludes this surface
         if (ZoneAESum(ZoneNum) > 0.01) {
-            CalcSurfaceWeightedMRT = 0.5 * (TH(2, 1, SurfNum) + (SumAET / ZoneAESum(ZoneNum)));
+            CalcSurfaceWeightedMRT = SumAET / ZoneAESum(ZoneNum);
+            // if averaged with surface--half comes from the surface used for weighting (SurfNum) and the rest from the calculated MRT that excludes
+            // this surface
+            if (AverageWithSurface) {
+                CalcSurfaceWeightedMRT = 0.5 * (TH(2, 1, SurfNum) + CalcSurfaceWeightedMRT);
+            }
         } else {
             if (FirstTimeError) {
                 ShowWarningError("Zone areas*inside surface emissivities are summing to zero, for Zone=\"" + Zone(ZoneNum).Name + "\"");
                 ShowContinueError("As a result, MAT will be used for MRT when calculating a surface weighted MRT for this zone.");
                 FirstTimeError = false;
-                CalcSurfaceWeightedMRT = 0.5 * (TH(2, 1, SurfNum) + MAT(ZoneNum));
+                CalcSurfaceWeightedMRT = MAT(ZoneNum);
+                if (AverageWithSurface) {
+                    CalcSurfaceWeightedMRT = 0.5 * (TH(2, 1, SurfNum) + CalcSurfaceWeightedMRT);
+                }
+                //CalcSurfaceWeightedMRT = 0.5 * (TH(2, 1, SurfNum) + MAT(ZoneNum));
             }
         }
 

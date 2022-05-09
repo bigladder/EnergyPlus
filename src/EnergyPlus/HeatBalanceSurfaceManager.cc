@@ -5488,6 +5488,14 @@ namespace HeatBalanceSurfaceManager {
                 Surface(SurfNum).Class == SurfaceClass_IntMass || Surface(SurfNum).Class == SurfaceClass_Roof ||
                 Surface(SurfNum).Class == SurfaceClass_Door) {
 
+                // if Kiva surface (floor or wall)
+                // here, set conduction of opaque surfaces (cond and flux)
+                OpaqSurfInsFaceConductionFlux(SurfNum) =
+                    -(QdotConvInRepPerArea(SurfNum) + QdotRadNetSurfInRepPerArea(SurfNum) +
+                        QdotRadHVACInRepPerArea(SurfNum) + QdotRadIntGainsInRepPerArea(SurfNum) +
+                        QRadSWInAbs(SurfNum));
+                OpaqSurfInsFaceConduction(SurfNum) = OpaqSurfInsFaceConductionFlux(SurfNum) * Surface(SurfNum).Area;
+
                 // inside face conduction updates
                 OpaqSurfInsFaceConductionEnergy(SurfNum) = OpaqSurfInsFaceConduction(SurfNum) * TimeStepZoneSec;
                 ZoneOpaqSurfInsFaceCond(Surface(SurfNum).Zone) += OpaqSurfInsFaceConduction(SurfNum);
@@ -6509,7 +6517,7 @@ namespace HeatBalanceSurfaceManager {
 
             if (DataHeatBalance::AnyKiva) {
                 for (auto &kivaSurf : SurfaceGeometry::kivaManager.surfaceMap) {
-                    TempSurfIn(kivaSurf.first) = kivaSurf.second.results.Tavg - DataGlobals::KelvinConv; // TODO: Use average radiant temp? Trad?
+                    TempSurfIn(kivaSurf.first) = kivaSurf.second.results.Trad - DataGlobals::KelvinConv; // TODO: Use average radiant temp? Trad?
                 }
             }
 
@@ -6801,8 +6809,6 @@ namespace HeatBalanceSurfaceManager {
                         } else if (surface.HeatTransferAlgorithm == HeatTransferModel_Kiva) {
                             // Read Kiva results for each surface
                             TempSurfInTmp(SurfNum) = SurfaceGeometry::kivaManager.surfaceMap[SurfNum].results.Tconv - DataGlobals::KelvinConv;
-                            OpaqSurfInsFaceConductionFlux(SurfNum) = SurfaceGeometry::kivaManager.surfaceMap[SurfNum].results.qtot;
-                            OpaqSurfInsFaceConduction(SurfNum) = OpaqSurfInsFaceConductionFlux(SurfNum) * DataSurfaces::Surface(SurfNum).Area;
 
                             TH11 = 0.0;
                         }

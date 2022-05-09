@@ -311,7 +311,7 @@ namespace ThermalComfort {
 
     Real64 CalcAngleFactorMRT(int const AngleFacNum);
 
-    Real64 CalcSurfaceWeightedMRT(int const ZoneNum, int const SurfNum);
+    Real64 CalcSurfaceWeightedMRT(int const ZoneNum, int const SurfNum, bool AverageWithSurface = true);
 
     Real64 CalcSatVapPressFromTemp(Real64 const Temp);
 
