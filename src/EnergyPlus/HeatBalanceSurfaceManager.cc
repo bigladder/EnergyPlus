@@ -5488,13 +5488,14 @@ namespace HeatBalanceSurfaceManager {
                 Surface(SurfNum).Class == SurfaceClass_IntMass || Surface(SurfNum).Class == SurfaceClass_Roof ||
                 Surface(SurfNum).Class == SurfaceClass_Door) {
 
-                // if Kiva surface (floor or wall)
-                // here, set conduction of opaque surfaces (cond and flux)
-                OpaqSurfInsFaceConductionFlux(SurfNum) =
-                    -(QdotConvInRepPerArea(SurfNum) + QdotRadNetSurfInRepPerArea(SurfNum) +
-                        QdotRadHVACInRepPerArea(SurfNum) + QdotRadIntGainsInRepPerArea(SurfNum) +
-                        QRadSWInAbs(SurfNum));
-                OpaqSurfInsFaceConduction(SurfNum) = OpaqSurfInsFaceConductionFlux(SurfNum) * Surface(SurfNum).Area;
+                if (Surface(SurfNum).Class == SurfaceClass_Floor || Surface(SurfNum).Class == SurfaceClass_Wall)
+                {
+                    OpaqSurfInsFaceConductionFlux(SurfNum) =
+                        -(QdotConvInRepPerArea(SurfNum) + QdotRadNetSurfInRepPerArea(SurfNum) +
+                            QdotRadHVACInRepPerArea(SurfNum) + QdotRadIntGainsInRepPerArea(SurfNum) +
+                            QRadSWInAbs(SurfNum));
+                    OpaqSurfInsFaceConduction(SurfNum) = OpaqSurfInsFaceConductionFlux(SurfNum) * Surface(SurfNum).Area;
+                }
 
                 // inside face conduction updates
                 OpaqSurfInsFaceConductionEnergy(SurfNum) = OpaqSurfInsFaceConduction(SurfNum) * TimeStepZoneSec;
