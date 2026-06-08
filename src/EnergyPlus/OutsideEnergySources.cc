@@ -471,15 +471,31 @@ void OutsideEnergySourceSpecs::calculate(EnergyPlusData &state, bool runFlag, Re
         if (this->EnergyType == DataPlant::PlantEquipmentType::PurchChilledWater ||
             this->EnergyType == DataPlant::PlantEquipmentType::PurchHotWater) {
             Real64 const Cp = state.dataPlnt->PlantLoop(LoopNum).glycol->getSpecificHeat(state, this->InletTemp, RoutineName);
-            this->OutletTemp = (MyLoad + this->MassFlowRate * Cp * this->InletTemp) / (this->MassFlowRate * Cp);
-            // apply loop limits on temperature result to keep in check
-            if (this->OutletTemp < LoopMinTemp) {
-                this->OutletTemp = max(this->OutletTemp, LoopMinTemp);
-                MyLoad = this->MassFlowRate * Cp * (this->OutletTemp - this->InletTemp);
+
+            this->MassFlowRate = abs(MyLoad) / (Cp * abs(this->InletTemp - state.dataLoopNodes->Node(loop.TempSetPointNodeNum).TempSetPoint));
+            if (this->MassFlowRate < LoopMinMdot) {
+                this->MassFlowRate = max(this->MassFlowRate, LoopMinMdot);
             }
-            if (this->OutletTemp > LoopMaxTemp) {
-                this->OutletTemp = min(this->OutletTemp, LoopMaxTemp);
-                MyLoad = this->MassFlowRate * Cp * (this->OutletTemp - this->InletTemp);
+            if (this->MassFlowRate > LoopMaxMdot) {
+                this->MassFlowRate = min(this->MassFlowRate, LoopMaxMdot);
+            }
+            PlantUtilities::SetComponentFlowRate(state, this->MassFlowRate, this->InletNodeNum, this->OutletNodeNum, this->plantLoc);
+
+            if (this->MassFlowRate > 0.0) {
+                this->OutletTemp = (MyLoad + this->MassFlowRate * Cp * this->InletTemp) / (this->MassFlowRate * Cp);
+                // apply loop limits on temperature result to keep in check
+                if (this->OutletTemp < LoopMinTemp) {
+                    this->OutletTemp = max(this->OutletTemp, LoopMinTemp);
+                    MyLoad = this->MassFlowRate * Cp * (this->OutletTemp - this->InletTemp);
+                    // this->MassFlowRate = max(this->MassFlowRate, LoopMinMdot);
+                }
+                if (this->OutletTemp > LoopMaxTemp) {
+                    this->OutletTemp = min(this->OutletTemp, LoopMaxTemp);
+                    MyLoad = this->MassFlowRate * Cp * (this->OutletTemp - this->InletTemp);
+                    // this->MassFlowRate = min(this->MassFlowRate, LoopMaxMdot);
+                }
+            } else {
+                this->OutletTemp = this->InletTemp;
             }
         } else if (this->EnergyType == DataPlant::PlantEquipmentType::PurchSteam) { // determine mass flow rate based on inlet temp, saturate temp at
                                                                                     // atmospheric pressure, Cp of inlet condensate, and MyLoad
