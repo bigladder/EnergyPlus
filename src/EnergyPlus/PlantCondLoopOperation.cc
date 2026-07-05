@@ -3145,8 +3145,9 @@ void DistributePlantLoad(EnergyPlusData &state,
                     continue;
                 }
 
-                if (this_component.MaxLoad > 0.0) { // apply known limit
-                    ChangeInLoad = min(this_component.MaxLoad, std::abs(RemLoopDemand));
+                Real64 MaxLoad = this_component.getDynamicMaxCapacity(state);
+                if (MaxLoad > 0.0) { // apply known limit
+                    ChangeInLoad = min(MaxLoad, std::abs(RemLoopDemand));
                 } else {
                     // this is for some components like cooling towers don't have well defined MaxLoad
                     ChangeInLoad = std::abs(RemLoopDemand);
@@ -3378,14 +3379,15 @@ void DistributePlantLoad(EnergyPlusData &state,
                     continue;
                 }
 
-                PlantCapacity += this_component.MaxLoad;
+                Real64 MaxLoad = this_component.getDynamicMaxCapacity(state);
+                PlantCapacity += MaxLoad;
 
-                if (this_component.MaxLoad < SmallLoad) {
+                if (MaxLoad < SmallLoad) {
                     ShowWarningMessage(state,
                                        format("Plant component {} has zero available capacity. Check component controls.", this_component.Name));
                     MinCompPLR = 0.0;
                 } else {
-                    MinCompPLR = this_component.MinLoad / this_component.MaxLoad;
+                    MinCompPLR = this_component.MinLoad / MaxLoad;
                 }
 
                 // Set LargestMinCompPLR to largest MinCompPLR
@@ -3420,9 +3422,10 @@ void DistributePlantLoad(EnergyPlusData &state,
                     continue;
                 }
 
-                CompLoad = PlantPLR * this_component.MaxLoad;
+                Real64 MaxLoad = this_component.getDynamicMaxCapacity(state);
+                CompLoad = PlantPLR * MaxLoad;
 
-                if (this_component.MaxLoad > 0.0) {
+                if (MaxLoad > 0.0) {
                     ChangeInLoad = min(std::abs(RemLoopDemand), CompLoad);
                 } else {
                     // this is for some components like cooling towers don't have well defined MaxLoad

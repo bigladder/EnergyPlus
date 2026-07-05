@@ -105,6 +105,8 @@ namespace OutsideEnergySources {
         void getDesignCapacities(
             EnergyPlusData &state, const PlantLocation &calledFromLocation, Real64 &MaxLoad, Real64 &MinLoad, Real64 &OptLoad) override;
 
+        Real64 getDynamicMaxCapacity(EnergyPlusData &state) override;
+
         void initialize(EnergyPlusData &state, Real64 curLoad);
 
         void calculate(EnergyPlusData &state, bool runFlag, Real64 curLoad);

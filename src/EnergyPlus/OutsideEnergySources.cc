@@ -132,6 +132,15 @@ void OutsideEnergySourceSpecs::getDesignCapacities([[maybe_unused]] EnergyPlusDa
     OptLoad = this->NomCap;
 }
 
+Real64 OutsideEnergySourceSpecs::getDynamicMaxCapacity(EnergyPlusData &state)
+{
+    Real64 CapFraction = this->capFractionSched->getCurrentVal();
+    CapFraction = max(0.0, CapFraction); // ensure non negative
+    Real64 const CurrentCap = this->NomCap * CapFraction;
+
+    return CurrentCap;
+}
+
 void GetOutsideEnergySourcesInput(EnergyPlusData &state)
 {
     // SUBROUTINE INFORMATION:
