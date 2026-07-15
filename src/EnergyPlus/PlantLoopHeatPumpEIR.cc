@@ -752,8 +752,7 @@ void EIRPlantLoopHeatPump::calcPowerUsage(EnergyPlusData &state)
 
     // compute power usage
     if (this->thermosiphonDisabled(state)) {
-        this->powerUsage =
-            (this->loadSideHeatTransfer / this->referenceCOP) * eirModifierFuncPLR * eirModifierFuncTemp * this->defrostPowerMultiplier;
+        this->powerUsage = (this->referenceCapacity / this->referenceCOP) * eirModifierFuncPLR * eirModifierFuncTemp * this->defrostPowerMultiplier;
     }
 }
 
