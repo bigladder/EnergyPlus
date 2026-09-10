@@ -891,6 +891,10 @@ namespace DataPlant {
         // reference
         auto &loop(state.dataPlnt->PlantLoop(this->plantLoc.loopNum));
 
+        // count of parallel, independently-staged equipment branches (e.g. multiple HRCs) on the supply side;
+        // used below to decide whether it's safe to cap loop flow at supply capacity
+        int supplyActiveParallelBranchCount = 0;
+
         //~ First we need to set up the flow requests on each LoopSide
         for (DataPlant::LoopSideLocation LoopSideCounter : DataPlant::LoopSideKeys) {
             // Clear things out for this LoopSide
@@ -921,6 +925,11 @@ namespace DataPlant {
 
                 if (BranchCounter > 1 && BranchCounter < NumBranchesOnThisLoopSide) {
                     ++ParallelBranchIndex;
+                    if (LoopSideCounter == DataPlant::LoopSideLocation::Supply &&
+                        (branch.controlType == DataBranchAirLoopPlant::ControlType::Active ||
+                         branch.controlType == DataBranchAirLoopPlant::ControlType::SeriesActive)) {
+                        ++supplyActiveParallelBranchCount;
+                    }
                 }
 
                 if (branch.disableOverrideForCSBranchPumping) {
@@ -1092,9 +1101,21 @@ namespace DataPlant {
         other_loop_side.FlowRequest = other_loop_side.flowRequestFinal;
 
         if (loop.CommonPipeType == DataPlant::CommonPipeType::No) {
-            // we may or may not have a pump on this side, but the flow request is the larger of the two side's final
+            // we may or may not have a pump on this side, but the flow request is the larger of the two side's final,
+            // unless the demand side is asking for more than the supply side's active equipment can actually deliver
             if ((!this_loop_side.hasConstSpeedBranchPumps) && (!other_loop_side.hasConstSpeedBranchPumps)) {
-                LoopFlow = max(this_loop_side.flowRequestFinal, other_loop_side.flowRequestFinal);
+                auto const &supply_side(loop.LoopSide(DataPlant::LoopSideLocation::Supply));
+                auto const &demand_side(loop.LoopSide(DataPlant::LoopSideLocation::Demand));
+                if (supplyActiveParallelBranchCount > 1 && supply_side.flowRequestFinal > DataBranchAirLoopPlant::MassFlowTolerance &&
+                    demand_side.flowRequestFinal > supply_side.flowRequestFinal) {
+                    // multiple independently-staged supply branches (e.g. several HRCs): don't move more flow
+                    // than the currently-active ones can supply; let the demand side draw less than it asked
+                    // for rather than dumping the excess into a bypass. Guarded to loops with more than one
+                    // staged supply branch so ordinary single-chiller/boiler loops keep today's behavior.
+                    LoopFlow = supply_side.flowRequestFinal;
+                } else {
+                    LoopFlow = max(this_loop_side.flowRequestFinal, other_loop_side.flowRequestFinal);
+                }
             } else { // account for stepped loop flow rates required of branch pumps
 
                 // rules for setting flow when there are constant speed branch pumps.
