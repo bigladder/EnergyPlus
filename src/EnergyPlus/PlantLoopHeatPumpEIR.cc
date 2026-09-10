@@ -95,6 +95,19 @@ void EIRPlantLoopHeatPump::simulate(
     }
 
     if (this->waterSource) {
+        // Don't request flow for an hour this unit can't actually meet a load for (e.g. cooling
+        // equipment dispatched against a load that isn't a cooling load) -- doPhysics already skips
+        // such hours, but by then setOperatingFlowRatesWSHP has already locked in a flow request for
+        // the pump to move, which doPhysics can no longer take back once the loop side is flow-locked.
+        // Load-side CurLoad is the same value doPhysics will check, so this only applies on the
+        // load-side call, and only for Load control (Setpoint control derives its own load from flow,
+        // so CurLoad isn't known to be comparable yet at this point).
+        if (this->running && !this->heatRecoveryHeatPump && this->sysControlType == ControlType::Load &&
+            calledFromLocation.loopNum == this->loadSidePlantLoc.loopNum &&
+            ((this->EIRHPType == DataPlant::PlantEquipmentType::HeatPumpEIRCooling && CurLoad >= 0.0) ||
+             (this->EIRHPType == DataPlant::PlantEquipmentType::HeatPumpEIRHeating && CurLoad <= 0.0))) {
+            this->running = false;
+        }
         this->setOperatingFlowRatesWSHP(state, FirstHVACIteration);
         if (calledFromLocation.loopNum == this->sourceSidePlantLoc.loopNum) { // condenser side
             Real64 sourceQdotArg = 0.0;                                       // pass negative if heat pump heating
@@ -432,6 +445,22 @@ void EIRPlantLoopHeatPump::doPhysics(EnergyPlusData &state, Real64 currentLoad)
     if ((this->EIRHPType == DataPlant::PlantEquipmentType::HeatPumpEIRCooling && currentLoad >= 0.0) ||
         (this->EIRHPType == DataPlant::PlantEquipmentType::HeatPumpEIRHeating && currentLoad <= 0.0)) {
         this->resetReportingVariables();
+        // there's no actual load to meet, so release the flow that was requested before the load was known
+        if (this->waterSource && !this->heatRecoveryHeatPump) {
+            this->loadSideMassFlowRate = 0.0;
+            this->sourceSideMassFlowRate = 0.0;
+            this->running = false;
+            PlantUtilities::SetComponentFlowRate(
+                state, this->loadSideMassFlowRate, this->loadSideNodes.inlet, this->loadSideNodes.outlet, this->loadSidePlantLoc);
+            PlantUtilities::SetComponentFlowRate(
+                state, this->sourceSideMassFlowRate, this->sourceSideNodes.inlet, this->sourceSideNodes.outlet, this->sourceSidePlantLoc);
+        } else if (this->airSource) {
+            this->loadSideMassFlowRate = 0.0;
+            this->sourceSideMassFlowRate = 0.0;
+            this->running = false;
+            PlantUtilities::SetComponentFlowRate(
+                state, this->loadSideMassFlowRate, this->loadSideNodes.inlet, this->loadSideNodes.outlet, this->loadSidePlantLoc);
+        }
         return;
     }
 
