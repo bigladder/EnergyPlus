@@ -92,7 +92,7 @@ public:
 
     virtual Real64 getDynamicMaxCapacity([[maybe_unused]] EnergyPlusData &state)
     {
-        return 0.0;
+        return std::numeric_limits<Real64>::lowest();
     }
 
     virtual void getCurrentPower([[maybe_unused]] EnergyPlusData &state, [[maybe_unused]] Real64 &power)
